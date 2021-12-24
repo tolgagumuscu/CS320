@@ -502,4 +502,88 @@ public class GUI {
     private static void refreshUsers(){
 
     }
+    private static ArrayList<User> getUsers() throws SQLException {
+        users.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from users";
+        ResultSet res = st.executeQuery(cd);
+        User usr;
+        while(res.next()){
+            usr = new User(Integer.parseInt(res.getString(1)),Integer.parseInt(res.getString(2)), (res.getString(3)),res.getString(4));
+            users.add(usr);
+        }
+        return users;
+    }
+
+    private static ArrayList<FastFoods> getFastFoods() throws SQLException {
+        fastFoods.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from fastfoods";
+        ResultSet res = st.executeQuery(cd);
+        FastFoods fs;
+        while(res.next()){
+            fs = new FastFoods(Integer.parseInt(res.getString(1)), (res.getString(2)),Float.parseFloat(res.getString(3)), res.getString(4),Integer.parseInt(res.getString(5)));
+            fastFoods.add(fs);
+        }
+        return fastFoods;
+    }
+
+    private static ArrayList<Bevarages> getBeverages() throws SQLException {
+        beverages.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from beverages";
+        ResultSet res = st.executeQuery(cd);
+        Bevarages bv;
+        while(res.next()){
+            bv = new Bevarages(Integer.parseInt(res.getString(1)), (res.getString(2)),Float.parseFloat(res.getString(3)),res.getString(4),Integer.parseInt(res.getString(5)));
+            beverages.add(bv);
+        }
+        return beverages;
+    }
+
+    private static ArrayList<Computers> getComputers() throws SQLException {
+        computers.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from computers";
+        ResultSet res = st.executeQuery(cd);
+        Computers cp;
+        while(res.next()){
+            boolean empty = false;
+            if(res.getString(3).equals("1")){
+                empty = false;
+            }else{
+                empty = true;
+            }
+            cp = new Computers(Integer.parseInt(res.getString(1)), (res.getString(2)),empty,res.getString(4),res.getString(5),Double.parseDouble(res.getString(6)));
+            computers.add(cp);
+        }
+        return computers;
+    }
+
+    private static ArrayList<Order> getOrders() throws SQLException {
+        orders.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from orders";
+        ResultSet res = st.executeQuery(cd);
+        Order or;
+        while(res.next()){
+            int foodID;
+            int beverageID;
+            int id = Integer.parseInt(res.getString(1));
+            int personID = Integer.parseInt(res.getString(2));
+            if(res.getString(3)==null){
+                foodID = 0;
+            } else{
+                foodID = Integer.parseInt(res.getString(3));
+            }
+            if(res.getString(4)==null){
+                beverageID = 0;
+            } else{
+                beverageID = Integer.parseInt(res.getString(4));
+            }
+            or = new Order(id, personID, foodID, beverageID, res.getString(5),Double.parseDouble(res.getString(6)));
+            orders.add(or);
+        }
+        return orders;
+    }
 }
