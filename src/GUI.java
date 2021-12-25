@@ -638,4 +638,31 @@ public class GUI {
             e.printStackTrace();
         }
     }
+    private static ArrayList<ImageIcon> getFoodImages(ArrayList<FastFoods> fastFoods) throws IOException {
+
+        for(int i = 0; i < fastFoods.size(); i++){
+            String path = fastFoods.get(i).getImagePath();
+            path = path.replace("D:\\LECTURES\\CS\\CS320\\CS320PROJECT\\Photos\\","Photos\\");
+            path = path.replace("\\", "\\\\");
+            ImageIcon myPicture = getImage(path);
+            foodImages.add(myPicture);
+        }
+        return foodImages;
+    }
+
+    private static ArrayList<ImageIcon> getBeveragesImages(ArrayList<Bevarages> beverages) throws IOException {
+
+        for(int i = 0; i < beverages.size(); i++){
+            String path = beverages.get(i).getImagePath();
+            path.replace('/', '\\');
+            ImageIcon myPicture = getImage(path);
+            beveragesImages.add(myPicture);
+        }
+        return beveragesImages;
+    }
+
+    private static ImageIcon getImage(String path) throws IOException {
+        ImageIcon myPicture = new ImageIcon(path);
+        return myPicture;
+    }
 }
