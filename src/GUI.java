@@ -1,3 +1,4 @@
+import com.mysql.cj.protocol.Resultset;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -127,9 +128,9 @@ public class GUI {
         frame.setLayout(null);
         frame.setBackground(Color.white);
         log.setBounds(750,250,400,400);
-        menuPanel.setBounds(300,10,900,960);
-        selectPanel.setBounds(300,10,900,1000);
-        deskPanel.setBounds(300,10,1050,960);
+        menuPanel.setBounds(300,10,1100,1000);
+        selectPanel.setBounds(300,10,1500,1000);
+        deskPanel.setBounds(300,10,1300,1000);
         usersPanel.setBounds(300,10,1500,1000);
         usersPanel.setVisible(false);
         menuPanel.setVisible(false);
@@ -279,6 +280,7 @@ public class GUI {
                 usersPanel.setVisible(false);
                 basketPanel.setVisible(false);
                 stockPanel.setVisible(false);
+                frame.revalidate();
                 frame.repaint();
                 frame.setVisible(true);
             }
@@ -686,12 +688,128 @@ public class GUI {
 
     private static JPanel deskPanel() throws SQLException, IOException {
         JPanel deskPanel = new JPanel();
+        ArrayList<JRadioButton> radioButtons = new ArrayList<>();
+        GridLayout gr = new GridLayout();
+        gr.setColumns(5);
+        gr.setRows(5);
+        ButtonGroup bg = new ButtonGroup();
+        for(int i = 0; i < 25; i++){
+            JPanel panel = new JPanel();
+            panel.setLayout(null);
+            panel.setSize(100,200);
+            BufferedImage myPicture = ImageIO.read(new File("Photos\\indir.png"));
+            JLabel picLabel = new JLabel(new ImageIcon(myPicture));
+            JRadioButton radioButton = new JRadioButton(computers.get(i).getComputerName());
+            picLabel.setBounds(0,0,200,150);
+            radioButton.setBounds(0,150,200,50);
+            panel.add(picLabel);
+            panel.add(radioButton);
+            radioButtons.add(radioButton);
+            bg.add(radioButton);
+            panel.setVisible(true);
+            deskPanel.add(panel);
+        }
+
+        for(int i = 0; i < radioButtons.size(); i++){
+            int a = i;
+            radioButtons.get(i).addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        deskControl(a + 1);
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    frame.repaint();
+                }
+            });
+        }
+        deskPanel.setLayout(gr);
+        deskPanel.setBackground(Color.white);
+        deskPanel.setVisible(true);
+
         return deskPanel;
     }
 
     private static JPanel userSelectCompPanel() throws IOException, SQLException {
         Statement st = conn.createStatement();
         JPanel selectPanel = new JPanel();
+        ArrayList<JRadioButton> radioButtons = new ArrayList<>();
+        GridLayout gr = new GridLayout();
+        gr.setColumns(5);
+        gr.setRows(5);
+        ButtonGroup bg = new ButtonGroup();
+        for(int i = 0; i < 25; i++){
+            JPanel panel = new JPanel();
+            panel.setLayout(null);
+            panel.setSize(100,200);
+            BufferedImage myPicture = ImageIO.read(new File("Photos\\indir.png"));
+            JLabel picLabel = new JLabel(new ImageIcon(myPicture));
+            JRadioButton radioButton = new JRadioButton(computers.get(i).getComputerName());
+            picLabel.setBounds(0,0,200,150);
+            radioButton.setBounds(0,150,200,50);
+            panel.add(radioButton);
+            panel.add(picLabel);
+            radioButtons.add(radioButton);
+            bg.add(radioButton);
+            panel.setVisible(true);
+            selectPanel.add(panel);
+        }
+
+        for(int i = 0; i < radioButtons.size(); i++){
+            int a = i;
+            radioButtons.get(i).addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String cd = "update computers set isEmpty = 1 where computerID="+(a+1);
+                    String up = "update computers set startTime = NOW() where computerID="+(a+1);
+                    String time = "select startTime from computers where computerID="+(a+1);
+                    ResultSet res = null;
+                    try {
+                        res = st.executeQuery(time);
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    try {
+                        res.next();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    String start = null;
+                    try {
+                        start = res.getString(1);
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    computers.get(a).setStartTime(start);
+                    if(computers.get(a).isEmpty()){
+                        try {
+                            String aa = "update computers set payment = 2 where computerID="+(a+1);
+                            st.executeUpdate(aa);
+                            st.executeUpdate(cd);
+                            st.executeUpdate(up);
+                            computers.get(a).setEmpty(false);
+                            computers.get(a).setPayment(2);
+                            userDeskFrame((a+1));
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
+                        }
+                    }else{
+                        JOptionPane.showMessageDialog(null,"Bilgisayar şu an kullanımda");
+                    }
+                    frame.repaint();
+                }
+            });
+        }
+        selectPanel.setLayout(gr);
+        selectPanel.setBackground(Color.blue);
+        selectPanel.setBounds(300,0,1500,1000);
+        selectPanel.setVisible(true);
+        frame.add(selectPanel);
+        frame.repaint();
+        frame.revalidate();
+        frame.setVisible(true);
+
         return selectPanel;
     }
 
@@ -748,14 +866,160 @@ public class GUI {
     }
 
     private static void userDeskFrame(int masa) throws SQLException {
+        Statement st = conn.createStatement();
+        JFrame userFrame = new JFrame("Masa-"+masa);
+        userFrame.setSize(200,200);
+        JLabel startTime = new JLabel();
+        computers = getComputers();
+        String startTimeString = computers.get(masa-1).getStartTime().substring(10);
+        startTime.setText("Başlangıç Zamanı:  "+startTimeString);
+        startTime.setBounds(0,20,200,20);
+        double ucret = 2;
+        final double[] diff = new double[1];
+        Button bitir = new Button();
+        bitir.setLabel("Masayı Kapat");
+        bitir.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String cd = "update computers set finishTime = NOW() where computerID="+masa;
+                String fn = "select timestampdiff(minute,startTime,finishTime) from computers where computerID ="+masa;
+                String nn = "update computers set finishTime = '0000-00-00 00:00:00' where computerID="+masa;
+                String nn2 = "update computers set startTime = '0000-00-00 00:00:00' where computerID="+masa;
+                String nn3 = "update computers set isEmpty = 0 where computerID="+masa;
+                try {
+                    st.executeUpdate(cd);
+                    ResultSet res = st.executeQuery(fn);
+                    res.next();
+                    diff[0] =(Double.parseDouble(res.getString(1))/60);
+                    st.executeUpdate(nn);
+                    st.executeUpdate(nn2);
+                    st.executeUpdate(nn3);
+                    JOptionPane.showMessageDialog(null,"Masanız Kapatıldı!");
+                    computers.get(masa-1).setPayment(0);
+                    userFrame.dispose();
+                    computers = getComputers();
+                } catch (SQLException ex){
+                    ex.printStackTrace();
+                }
+            }
+        });
+        bitir.setBounds(10,100,160,30);
 
+        JLabel ucretLabel = new JLabel();
+        ucretLabel.setText("Ücret: " + (ucret+diff[0])+"₺");
+        ucretLabel.setBounds(20,30,160,20);
+
+        userFrame.add(startTime);
+        userFrame.add(bitir);
+        userFrame.add(ucretLabel);
+
+        userFrame.setVisible(true);
     }
 
     private static void deskControl(int masa) throws SQLException {
+        Statement st = conn.createStatement();
+        computers = getComputers();
+        JPanel deskControl = new JPanel();
+        deskControl.setLayout(null);
+        JLabel lb = new JLabel();
+        lb.setText("MASA-"+masa);
+        JLabel begin = new JLabel();
+        begin.setText("Başlangıç Zamanı:");
+        JLabel begined = new JLabel();
+        if(computers.get(masa-1).isEmpty()){
+            JOptionPane.showMessageDialog(null, "Masa şu an kullanımda değil!");
+        }else{
+            begined.setText(computers.get(masa-1).getStartTime().substring(10));
+            JLabel pay = new JLabel();
+            pay.setText("Toplam Ücret");
+            JLabel payment = new JLabel();
+            payment.setText(String.valueOf(computers.get(masa-1).getPayment()));
+            lb.setBounds(75,0,150,25);
+            begin.setBounds(0,60,150,25);
+            begined.setBounds(160,60,150,25);
+            pay.setBounds(0,90,150,25);
+            payment.setBounds(160,90,150,25);
+            deskControl.add(lb);
+            deskControl.add(begin);
+            deskControl.add(begined);
+            deskControl.add(pay);
+            deskControl.add(payment);
+            deskControl.setVisible(true);
+            Button onayla = new Button();
+            onayla.setLabel("Tamamlandı");
+            onayla.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    deskControl.setVisible(false);
+                }
+            });
+            Button bitir = new Button();
+            bitir.setLabel("Masayı Kapat");
+            bitir.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String cd = "update computers set finishTime = NOW() where computerID="+masa;
+                    String fn = "select timestampdiff(minute,startTime,finishTime) from computers where computerID ="+masa;
+                    String nn = "update computers set finishTime = '0000-00-00 00:00:00' where computerID="+masa;
+                    String nn2 = "update computers set startTime = '0000-00-00 00:00:00' where computerID="+masa;
+                    String nn3 = "update computers set isEmpty = 0 where computerID="+masa;
+                    try {
+                        st.executeUpdate(cd);
+                        st.executeUpdate(nn);
+                        st.executeUpdate(nn2);
+                        st.executeUpdate(nn3);
+                        JOptionPane.showMessageDialog(null,"Masanız Kapatıldı!");
+                        computers = getComputers();
+                        deskControl.setVisible(false);
+                    } catch (SQLException ex){
+                        ex.printStackTrace();
+                    }
+                }
+            });
+            bitir.setBounds(120,800,100,50);
+            onayla.setBounds(0,800,100,50);
+            deskControl.add(bitir);
+            deskControl.add(onayla);
+            deskControl.setBounds(1600,10,500,1000);
+        }
+
+        frame.add(deskControl);
+        frame.revalidate();
     }
 
     private static JPanel usersPanel() throws SQLException {
         JPanel usersPanel = new JPanel();
+        usersPanel.setLayout(null);
+        JTable userTable;
+        String[][] arr = new String[users.size()][4];
+        for(int i = 0; i < users.size(); i++){
+            String[] arg = new String[4];
+            int personID = users.get(i).getID();
+            int userTypes = users.get(i).getUserType();
+            String userType;
+            if(userTypes==1){
+                userType = "Admin";
+            }else if(userTypes==2){
+                userType = "Aşçı";
+            }else{
+                userType = "Müşteri";
+            }
+            String userName = users.get(i).getUserName();
+            String userPass = users.get(i).getUserPassword();
+            arg[0]=String.valueOf(personID);
+            arg[1]=userType;
+            arg[2]=userName;
+            arg[3]=userPass;
+            arr[i] = arg;
+        }
+        String[] columnNames = {"Kullanıcı ID","Kullanıcı Tipi","Kullanıcı Adı","Kullanıcı Şifresi"};
+        userTable = new JTable(arr,columnNames);
+        userTable.setBounds(0,0,1000,1000);
+        userTable.setBackground(Color.yellow);
+        JScrollPane js = new JScrollPane(userTable);
+        js.setBounds(0,0,1000,1000);
+        usersPanel.add(js);
+        usersPanel.setVisible(true);
         return usersPanel;
     }
 
@@ -886,29 +1150,91 @@ public class GUI {
         frame.revalidate();
         frame.repaint();
         return userOrderPanel;
+
     }
 
     private static ArrayList<User> getUsers() throws SQLException {
-
+        users.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from users";
+        ResultSet res = st.executeQuery(cd);
+        User usr;
+        while(res.next()){
+            usr = new User(Integer.parseInt(res.getString(1)),Integer.parseInt(res.getString(2)), (res.getString(3)),res.getString(4));
+            users.add(usr);
+        }
         return users;
     }
 
     private static ArrayList<FastFoods> getFastFoods() throws SQLException {
-
+        fastFoods.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from fastfoods";
+        ResultSet res = st.executeQuery(cd);
+        FastFoods fs;
+        while(res.next()){
+            fs = new FastFoods(Integer.parseInt(res.getString(1)), (res.getString(2)),Float.parseFloat(res.getString(3)), res.getString(4),Integer.parseInt(res.getString(5)));
+            fastFoods.add(fs);
+        }
         return fastFoods;
     }
 
     private static ArrayList<Bevarages> getBeverages() throws SQLException {
-
+        beverages.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from beverages";
+        ResultSet res = st.executeQuery(cd);
+        Bevarages bv;
+        while(res.next()){
+            bv = new Bevarages(Integer.parseInt(res.getString(1)), (res.getString(2)),Float.parseFloat(res.getString(3)),res.getString(4),Integer.parseInt(res.getString(5)));
+            beverages.add(bv);
+        }
         return beverages;
     }
 
     private static ArrayList<Computers> getComputers() throws SQLException {
-
+        computers.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from computers";
+        ResultSet res = st.executeQuery(cd);
+        Computers cp;
+        while(res.next()){
+            boolean empty = false;
+            if(res.getString(3).equals("1")){
+                empty = false;
+            }else{
+                empty = true;
+            }
+            cp = new Computers(Integer.parseInt(res.getString(1)), (res.getString(2)),empty,res.getString(4),res.getString(5),Double.parseDouble(res.getString(6)));
+            computers.add(cp);
+        }
         return computers;
     }
 
     private static ArrayList<Order> getOrders() throws SQLException {
+        orders.clear();
+        Statement st = conn.createStatement();
+        String cd = "Select * from orders";
+        ResultSet res = st.executeQuery(cd);
+        Order or;
+        while(res.next()){
+            int foodID;
+            int beverageID;
+            int id = Integer.parseInt(res.getString(1));
+            int personID = Integer.parseInt(res.getString(2));
+            if(res.getString(3)==null){
+                foodID = 0;
+            } else{
+                foodID = Integer.parseInt(res.getString(3));
+            }
+            if(res.getString(4)==null){
+                beverageID = 0;
+            } else{
+                beverageID = Integer.parseInt(res.getString(4));
+            }
+            or = new Order(id, personID, foodID, beverageID, res.getString(5),Double.parseDouble(res.getString(6)));
+            orders.add(or);
+        }
         return orders;
     }
 
@@ -933,12 +1259,24 @@ public class GUI {
 
     private static ArrayList<ImageIcon> getFoodImages(ArrayList<FastFoods> fastFoods) throws IOException {
 
-
+        for(int i = 0; i < fastFoods.size(); i++){
+            String path = fastFoods.get(i).getImagePath();
+            path = path.replace("D:\\LECTURES\\CS\\CS320\\CS320PROJECT\\Photos\\","Photos\\");
+            path = path.replace("\\", "\\\\");
+            ImageIcon myPicture = getImage(path);
+            foodImages.add(myPicture);
+        }
         return foodImages;
     }
 
     private static ArrayList<ImageIcon> getBeveragesImages(ArrayList<Bevarages> beverages) throws IOException {
 
+        for(int i = 0; i < beverages.size(); i++){
+            String path = beverages.get(i).getImagePath();
+            path.replace('/', '\\');
+            ImageIcon myPicture = getImage(path);
+            beveragesImages.add(myPicture);
+        }
         return beveragesImages;
     }
 
@@ -948,7 +1286,7 @@ public class GUI {
     }
 
     private static void setOrder(int id, ArrayList<FastFoods> orderFood, ArrayList<Bevarages> orderBevarage) throws SQLException {
-		Statement st = conn.createStatement();
+        Statement st = conn.createStatement();
         for(int i = 0; i < orderFood.size(); i++){
             String sql = "INSERT INTO orders (orderedPersonID,orderedFoodID,orderPayment,paid) " +
                     "VALUES ("+id+","+orderFood.get(i).getID()+","+orderFood.get(i).getPrice()+", false)";
@@ -1000,38 +1338,19 @@ public class GUI {
         return id;
     }
 
+    private static void refreshOrderPanel() throws SQLException {
+        orderPanel.revalidate();
+        orderPanel.repaint();
+        frame.revalidate();
+        frame.repaint();
+        orderPanel();
+    }
+
     private static void refreshUsers(){
         try {
             users = getUsers();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-    private static ArrayList<ImageIcon> getFoodImages(ArrayList<FastFoods> fastFoods) throws IOException {
-
-        for(int i = 0; i < fastFoods.size(); i++){
-            String path = fastFoods.get(i).getImagePath();
-            path = path.replace("D:\\LECTURES\\CS\\CS320\\CS320PROJECT\\Photos\\","Photos\\");
-            path = path.replace("\\", "\\\\");
-            ImageIcon myPicture = getImage(path);
-            foodImages.add(myPicture);
-        }
-        return foodImages;
-    }
-
-    private static ArrayList<ImageIcon> getBeveragesImages(ArrayList<Bevarages> beverages) throws IOException {
-
-        for(int i = 0; i < beverages.size(); i++){
-            String path = beverages.get(i).getImagePath();
-            path.replace('/', '\\');
-            ImageIcon myPicture = getImage(path);
-            beveragesImages.add(myPicture);
-        }
-        return beveragesImages;
-    }
-
-    private static ImageIcon getImage(String path) throws IOException {
-        ImageIcon myPicture = new ImageIcon(path);
-        return myPicture;
     }
 }
