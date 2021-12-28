@@ -485,11 +485,202 @@ public class GUI {
 
     private static JPanel menuPanel(){
         JPanel menuPanel = new JPanel();
+        ArrayList<JPanel> foodPanel = new ArrayList<>();
+        ArrayList<JRadioButton> radioButtons = new ArrayList<>();
+        GridLayout gr = new GridLayout();
+        gr.setColumns(5);
+        gr.setRows(5);
+        ButtonGroup bg = new ButtonGroup();
+        for(int i = 0; i < fastFoods.size(); i++){
+            JPanel panel = new JPanel();
+            panel.setLayout(null);
+            panel.setSize(200,250);
+            JLabel picLabel = new JLabel(foodImages.get(i));
+            JRadioButton radioButton = new JRadioButton(fastFoods.get(i).getName());
+            radioButton.setActionCommand(fastFoods.get(i).getName());
+            picLabel.setBounds(0,0,200,170);
+            radioButton.setBounds(0,172,200,20);
+            if(fastFoods.get(i).getStock()==0){
+                JLabel label = new JLabel();
+                label.setText("Şu an ürün mevcut değil.");
+                label.setBounds(0,172,200,20);
+                panel.add(label);
+            }else{
+                panel.add(radioButton);
+                radioButtons.add(radioButton);
+            }
+            panel.add(picLabel);
+            foodPanel.add(panel);
+            bg.add(radioButton);
+            panel.setVisible(true);
+            menuPanel.add(panel);
+        }
+        for(int i = 0; i < beverages.size(); i++){
+            JPanel panel = new JPanel();
+            panel.setLayout(null);
+            panel.setSize(200,250);
+            JLabel picLabel = new JLabel(beveragesImages.get(i));
+            JRadioButton radioButton = new JRadioButton(beverages.get(i).getName());
+            radioButton.setActionCommand(beverages.get(i).getName());
+            picLabel.setBounds(0,0,200,170);
+            radioButton.setBounds(0,172,200,20);
+            if(beverages.get(i).getStock()==0){
+                JLabel label = new JLabel();
+                label.setText("Şu an ürün mevcut değil.");
+                label.setBounds(0,172,200,20);
+                panel.add(label);
+            }else{
+                panel.add(radioButton);
+                radioButtons.add(radioButton);
+            }
+            panel.add(picLabel);
+            foodPanel.add(panel);
+            bg.add(radioButton);
+            panel.setVisible(true);
+            menuPanel.add(panel);
+        }
+        JPanel eklePanel = new JPanel();
+        JButton ekleButon = new JButton("Sepete Ekle");
+        ekleButon.setFont(new Font("Calibre",Font.BOLD,20));
+        eklePanel.setLayout(null);
+        eklePanel.setSize(200,250);
+        ekleButon.setSize(200,100);
+        ekleButon.setBounds(25,100,150,70);
+        eklePanel.add(ekleButon);
+        ekleButon.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+               String a = bg.getSelection().getActionCommand();
+               FastFoods fs;
+               Bevarages bv;
+               for(int i = 0; i < fastFoods.size(); i++){
+                   if(a.equals(fastFoods.get(i).getName())){
+                       fs = fastFoods.get(i);
+                       basket.add(fs);
+                   }
+               }
+               for(int i = 0; i < beverages.size(); i++){
+                   if(a.equals(beverages.get(i).getName())){
+                       bv = beverages.get(i);
+                       basket2.add(bv);
+                   }
+               }
+               bg.clearSelection();
+               if(sira==1){
+                   frame.remove(basketPanel);
+               }
+               sira=1;
+               basketPanel(basket,basket2);
+               frame.revalidate();
+               frame.repaint();
+            }
+        });
+        menuPanel.add(eklePanel);
+        menuPanel.setLayout(gr);
+        menuPanel.setVisible(true);
         return menuPanel;
     }
 
     private static JPanel basketPanel(ArrayList<FastFoods> foodBasket, ArrayList<Bevarages> beverageBasket){
-        JPanel basketPanel = new JPanel();
+        basketPanel = new JPanel();
+        basketPanel.setLayout(null);
+        JTable basketTable;
+        int size = foodBasket.size()+beverageBasket.size();
+
+        String[][] arr = new String[size][2];
+        int de = 0;
+        if(!foodBasket.isEmpty()){
+            for(int i = 0; i < foodBasket.size(); i++){
+                String[] arg = new String[2];
+                double foodPrice = foodBasket.get(i).getPrice();
+                String foodName = foodBasket.get(i).getName();
+                arg[0]=foodName;
+                arg[1]=String.valueOf(foodPrice);
+                arr[i] = arg;
+                de++;
+            }
+        }
+        if(!beverageBasket.isEmpty()){
+            for(int i = 0; i < beverageBasket.size(); i++){
+                String[] arg = new String[2];
+                double foodPrice = beverageBasket.get(i).getPrice();
+                String foodName = beverageBasket.get(i).getName();
+                arg[0]=foodName;
+                arg[1]=String.valueOf(foodPrice);
+                arr[(de+i)] = arg;
+            }
+        }
+
+        String[] columnNames = {"Yiyecek/İçecek Adı","Yiyecek/İçecek Fiyatı"};
+        DefaultTableModel dtm = new DefaultTableModel(arr, columnNames);
+        basketTable = new JTable(dtm);
+        basketTable.setBounds(0,0,450,800);
+        basketTable.setBackground(Color.yellow);
+        basketTable.revalidate();
+        basketTable.repaint();
+        JScrollPane js = new JScrollPane(basketTable);
+        js.setBounds(0,0,450,800);
+        JButton onayla = new JButton();
+        onayla.setText("Sipariş Ver");
+        onayla.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(foodBasket.isEmpty()&&beverageBasket.isEmpty()){
+                    JOptionPane.showMessageDialog(null, "Sepetinizde hiçbir ürün yok");
+                }else{
+                    try {
+                        setOrder(loggedID,basket,basket2);
+                        frame.revalidate();
+                        frame.repaint();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    JOptionPane.showMessageDialog(null, "Siparişiniz Onaylandı!");
+                }
+            }
+        });
+        JButton sil = new JButton();
+        sil.setText("Seçilen ürünü sil");
+        sil.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int row = basketTable.getSelectedRow();
+                int column = basketTable.getSelectedColumn();
+                String value = basketTable.getModel().getValueAt(row, column).toString();
+
+                if(!basket.isEmpty()){
+                    for(int i = 0; i < basket.size(); i++){
+                        if(value.equals(basket.get(i).getName())){
+                            basket.remove(i);
+                            break;
+                        }
+                    }
+                }
+
+                if(!basket2.isEmpty()){
+                    for(int i = 0; i < basket2.size(); i++){
+                        if(value.equals(basket2.get(i).getName())){
+                            basket2.remove(i);
+                            break;
+                        }
+                    }
+                }
+
+                dtm.removeRow(row);
+                JOptionPane.showMessageDialog(null, "Ürün silindi");
+            }
+        });
+        sil.setBounds(0,800,150,50);
+        basketPanel.add(sil);
+        onayla.setBounds(300,800,150,50);
+        basketPanel.add(onayla);
+        js.setBackground(Color.red);
+        basketPanel.add(js);
+        basketPanel.setBounds(1450,0,450,1000);
+        basketPanel.setVisible(true);
+        frame.add(basketPanel);
+        frame.revalidate();
+        frame.repaint();
         return basketPanel;
     }
 
@@ -507,6 +698,52 @@ public class GUI {
     private static JPanel orderPanel() throws SQLException {
         Statement st = conn.createStatement();
         JPanel orderPanel = new JPanel();
+        orderPanel.setLayout(null);
+        JTable orderTable;
+        String[][] arr = new String[orders.size()][5];
+        for(int i = 0; i < orders.size(); i++){
+            String[] arg = new String[5];
+            int personID = orders.get(i).getOrderedPersonID();
+            int foodID = orders.get(i).getOrderedFoodID();
+            int beverageID = orders.get(i).getOrderedBeverageID();
+            String orderTime = orders.get(i).getOrderTime();
+            double payment = orders.get(i).getPayment();
+            String cd1 = "Select userName from users where userID ="+personID;
+            ResultSet res1 = st.executeQuery(cd1);
+            res1.next();
+            arg[0]= res1.getString(1);
+            if(foodID!=0){
+                String cd2 = "Select foodName from Fastfoods where foodID ="+foodID;
+                ResultSet res2 = st.executeQuery(cd2);
+                res2.next();
+                arg[1]=res2.getString(1);
+            }else{
+                arg[1]="Yiyecek yok";
+            }
+            if(beverageID!=0){
+                String cd3 = "Select beverageName from Beverages where beverageID ="+beverageID;
+                ResultSet res3 = st.executeQuery(cd3);
+                res3.next();
+                arg[2]=res3.getString(1);
+            }else{
+                arg[2]="İçecek yok";
+            }
+            arg[3]=orderTime;
+            arg[4]=String.valueOf(payment);
+            arr[i] = arg;
+        }
+        String[] columnNames = {"Client Name","Food","Beverage","Time","Payment"};
+        orderTable = new JTable(arr,columnNames);
+        orderTable.setBounds(0,0,1000,1000);
+        orderTable.setBackground(Color.yellow);
+        JScrollPane js = new JScrollPane(orderTable);
+        js.setBounds(0,0,1000,1000);
+        orderPanel.add(js);
+        orderPanel.setVisible(true);
+        orderPanel.setBounds(300,10,1500,1000);
+        frame.add(orderPanel);
+        frame.revalidate();
+        frame.repaint();
         return orderPanel;
     }
 
@@ -523,16 +760,132 @@ public class GUI {
     }
 
     private static JPanel stockPanel() throws SQLException {
+        beverages = getBeverages();
+        fastFoods = getFastFoods();
         JPanel stockPanel = new JPanel();
         stockPanel.setLayout(null);
+        JTable stockTable;
+        String[][] arr = new String[fastFoods.size()+ beverages.size()][2];
+        int de = 0;
+        for(int i = 0; i < fastFoods.size(); i++){
+            String[] arg = new String[2];
+            String name = fastFoods.get(i).getName();
+            int stock = fastFoods.get(i).getStock();
+            arg[0]=name;
+            arg[1]=String.valueOf(stock);
+            arr[i] = arg;
+            de++;
+        }
+        for(int i = 0; i < beverages.size(); i++){
+            String[] arg = new String[2];
+            String name = beverages.get(i).getName();
+            int stock = beverages.get(i).getStock();
+            arg[0]=name;
+            arg[1]=String.valueOf(stock);
+            arr[(de+i)] = arg;
+        }
+        String[] columnNames = {"Yiyecek/İçecek Adı","Yiyecek/İçecek Stoğu"};
+        DefaultTableModel dtm = new DefaultTableModel(arr, columnNames);
+        stockTable = new JTable(dtm);
+        stockTable.setBackground(Color.yellow);
+        JScrollPane js = new JScrollPane(stockTable);
+        stockPanel.setBounds(300,10,1000,1000);
+        js.setBounds(0,0,1000,1000);
+        stockPanel.add(js);
+        frame.add(stockPanel);
+        frame.revalidate();
+        frame.repaint();
         return stockPanel;
     }
 
     private static JPanel userOrderPanel(int userID) throws SQLException {
         Statement st = conn.createStatement();
         JPanel userOrderPanel = new JPanel();
+        userOrderPanel.setLayout(null);
+        JTable orderTable;
+        String counter = "select count(orderID) from orders where orderedPersonID ="+userID;
+        ResultSet rs = st.executeQuery(counter);
+        rs.next();
+        int c = 0;
+        double totalPayment = 0;
+        int count = Integer.parseInt(rs.getString(1));
+        String[][] arr = new String[count+1][6];
+        for(int i = 0; i < orders.size(); i++){
+            String[] arg = new String[6];
+            if(userID==orders.get(i).getOrderedPersonID()){
+                int foodID = orders.get(i).getOrderedFoodID();
+                int beverageID = orders.get(i).getOrderedBeverageID();
+                String orderTime = orders.get(i).getOrderTime();
+                double payment = orders.get(i).getPayment();
+                boolean paid = false;
+                String cd1 = "Select userName from users where userID ="+userID;
+                ResultSet res1 = st.executeQuery(cd1);
+                res1.next();
+                arg[0]= res1.getString(1);
+                if(foodID!=0){
+                    String cd2 = "Select foodName from Fastfoods where foodID ="+foodID;
+                    ResultSet res2 = st.executeQuery(cd2);
+                    res2.next();
+                    arg[1]=res2.getString(1);
+                }else{
+                    arg[1]="Yiyecek yok";
+                }
+                if(beverageID!=0){
+                    String cd3 = "Select beverageName from Beverages where beverageID ="+beverageID;
+                    ResultSet res3 = st.executeQuery(cd3);
+                    res3.next();
+                    arg[2]=res3.getString(1);
+                }else{
+                    arg[2]="İçecek yok";
+                }
+                arg[3]=orderTime;
+                totalPayment += payment;
+                arg[4]=String.valueOf(payment);
+                String cd4 = "Select paid from orders where orderID="+orders.get(i).getOrderID();
+                ResultSet res4 = st.executeQuery(cd4);
+                res4.next();
+                String pay = String.valueOf(res4.getString(1));
+                if(pay.equals("1")){
+                    paid = true;
+                    totalPayment = 0;
+                }
+                arg[5] = String.valueOf(paid);
+                arr[c] = arg;
+                c++;
+            }
+        }
+        arr[c]= new String[]{"","", "", "", "", "Total Payment: "+totalPayment};
+        String[] columnNames = {"Client Name","Food","Beverage","Time","Payment","Paid"};
+        orderTable = new JTable(arr,columnNames);
+        orderTable.setBounds(0,0,1000,1000);
+        orderTable.setBackground(Color.yellow);
+        JScrollPane js = new JScrollPane(orderTable);
+        js.setBounds(0,0,1000,1000);
+        Button payButton = new Button();
+        payButton.setLabel("Tüm Borçları Öde");
+        payButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String sr = "update orders set paid = true where orderedPersonID="+userID;
+                try {
+                    st.executeUpdate(sr);
+                    frame.remove(orderPanel);
+                    orderPanel = userOrderPanel(loggedID);
+                    frame.add(orderPanel);
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        payButton.setBounds(1050,0,200,100);
+        userOrderPanel.add(payButton);
+        userOrderPanel.add(js);
+        userOrderPanel.setVisible(true);
+        userOrderPanel.setBounds(300,10,1500,1000);
+        frame.add(userOrderPanel);
+        frame.revalidate();
+        frame.repaint();
         return userOrderPanel;
-
     }
 
     private static ArrayList<User> getUsers() throws SQLException {
@@ -595,7 +948,23 @@ public class GUI {
     }
 
     private static void setOrder(int id, ArrayList<FastFoods> orderFood, ArrayList<Bevarages> orderBevarage) throws SQLException {
-
+		Statement st = conn.createStatement();
+        for(int i = 0; i < orderFood.size(); i++){
+            String sql = "INSERT INTO orders (orderedPersonID,orderedFoodID,orderPayment,paid) " +
+                    "VALUES ("+id+","+orderFood.get(i).getID()+","+orderFood.get(i).getPrice()+", false)";
+            st.executeUpdate(sql);
+            String dec = "update fastfoods set foodStock = foodStock-1 where foodID="+orderFood.get(i).getID();
+            st.executeUpdate(dec);
+        }
+        for(int i = 0; i < orderBevarage.size(); i++){
+            String sql = "INSERT INTO orders (orderedPersonID,orderedBeverageID,orderPayment) " +
+                    "VALUES ("+id+","+orderBevarage.get(i).getID()+","+orderBevarage.get(i).getPrice()+")";
+            st.executeUpdate(sql);
+            String dec = "update beverages set beverageStock = beverageStock-1 where beverageID="+orderBevarage.get(i).getID();
+            st.executeUpdate(dec);
+        }
+        basket.clear();
+        basket2.clear();
     }
 
     private static void addUser(String userName, String password, int userType) throws SQLException {
